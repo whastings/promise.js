@@ -2,37 +2,31 @@ import Promise from '../Promise';
 import sinon from 'sinon';
 import test from 'tape';
 
-test('Promise()', function(t) {
-  t.test('it takes a callback and passes it resolve and reject functions', function(st) {
-    var resolveFn, rejectFn;
-    st.plan(2);
+var promise,
+    rejectTrigger,
+    resolveTrigger;
 
-    var promise = new Promise(function(resolve, reject) {
-      resolveFn = resolve;
-      rejectFn = reject;
+function before(test) {
+  return function(t) {
+    promise = new Promise(function(resolve, reject) {
+      resolveTrigger = resolve;
+      rejectTrigger = reject;
     });
 
-    st.equal(typeof resolveFn, 'function');
-    st.equal(typeof rejectFn, 'function');
-  });
+    return test(t);
+  };
+}
+
+test('Promise()', function(t) {
+  t.test('it takes a callback and passes it resolve and reject functions', before(function(st) {
+    st.plan(2);
+
+    st.equal(typeof resolveTrigger, 'function');
+    st.equal(typeof rejectTrigger, 'function');
+  }));
 });
 
 test('then() with success', function(t) {
-  var promise,
-      rejectTrigger,
-      resolveTrigger;
-
-  function before(test) {
-    return function(t) {
-      promise = new Promise(function(resolve, reject) {
-        resolveTrigger = resolve;
-        rejectTrigger = reject;
-      });
-
-      return test(t);
-    };
-  }
-
   t.test('it takes callbacks that are called on resolution with value', before(function(st) {
     var callbacks = [sinon.spy(), sinon.spy(), sinon.spy()];
     st.plan(9);
@@ -84,5 +78,80 @@ test('then() with success', function(t) {
         .then(() => st.pass())
         .then(() => st.pass());
     }, 0);
+  }));
+
+  t.test('it rejects second promise if callback throws exception', before(function(st) {
+    var secondPromise = promise.then(function() {
+      throw new Error('foo');
+    });
+    st.plan(1);
+
+    secondPromise.then(null, message => st.equal(message, 'foo'));
+    resolveTrigger('bar');
+  }));
+});
+
+test('then() with rejection', function(t) {
+  t.test('it takes callbacks that are called on rejection w/ message', before(function(st) {
+    var callbacks = [sinon.spy(), sinon.spy(), sinon.spy()];
+    st.plan(9);
+    callbacks.forEach(cb => promise.then(null, cb));
+
+    rejectTrigger('foo');
+
+    callbacks.forEach(cb => st.notOk(cb.called));
+
+    setTimeout(function() {
+      callbacks.forEach(function(cb) {
+        st.ok(cb.calledOnce);
+        st.ok(cb.calledWith('foo'));
+      });
+    }, 0);
+  }));
+
+  t.test('it returns a promise that is resolved with return value of callback', before(function(st) {
+    var secondPromise = promise.then(null, () => 'foo');
+    st.plan(1);
+
+    secondPromise.then(value => st.equal(value, 'foo'));
+    rejectTrigger('bar');
+  }));
+
+  t.test('it returns a promise that is rejected w/ same message if callback omitted', before(function(st) {
+    var secondPromise = promise.then();
+    st.plan(1);
+
+    secondPromise.then(null, message => st.equal(message, 'foo'));
+    rejectTrigger('foo');
+  }));
+
+  t.test('it does not invoke passed callback if one attempts to reject twice', before(function(st) {
+    st.plan(1);
+    promise.then(null, () => st.pass());
+
+    rejectTrigger();
+    rejectTrigger();
+  }));
+
+  t.test('it automatically invokes rejector if promise is already rejected', before(function(st) {
+    st.plan(3);
+
+    rejectTrigger('foo');
+
+    setTimeout(function() {
+      promise.then(null, message => st.equal(message, 'foo'))
+        .then(() => st.pass())
+        .then(() => st.pass());
+    }, 0);
+  }));
+
+  t.test('it rejects second promise if callback throws exception', before(function(st) {
+    var secondPromise = promise.then(null, function() {
+      throw new Error('foo');
+    });
+    st.plan(1);
+
+    secondPromise.then(null, message => st.equal(message, 'foo'));
+    rejectTrigger('bar');
   }));
 });

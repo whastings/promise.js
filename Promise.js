@@ -1,7 +1,6 @@
 export default function Promise(executor) {
   var state = {
-    rejectors: [],
-    resolvers: [],
+    callbacks: [],
     status: 'pending'
   };
 
@@ -18,7 +17,7 @@ function reject(state, message) {
     return;
   }
 
-  // TODO: Pass message to all rejectors
+  runRejectors(state.callbacks, message);
 
   state.message = message;
   state.status = 'rejected';
@@ -31,19 +30,39 @@ function resolve(state, value) {
   state.value = value;
   state.status = 'resolved';
 
-  runResolvers(state.resolvers, value);
+  runResolvers(state.callbacks, value);
+}
+
+function runRejectors(rejectors, message) {
+  setTimeout(function() {
+    rejectors.forEach(runCallback.bind(null, 'reject', message));
+  }, 0);
+}
+
+function runCallback(type, arg, data) {
+  var { rejectCallback, resolveCallback, rejectTrigger, resolveTrigger } = data,
+      isResolving = (type === 'resolve'),
+      callback = isResolving ? resolveCallback : rejectCallback,
+      trigger = isResolving ? resolveTrigger : rejectTrigger,
+      cbReturn,
+      error;
+
+  if (callback) {
+    cbReturn = tryCatch(callback, arg);
+    if (cbReturn.hasOwnProperty('value')) {
+      resolveTrigger(cbReturn.value);
+    } else {
+      error = cbReturn.error;
+      rejectTrigger(error instanceof Error ? error.message : error);
+    }
+  } else {
+    trigger(arg);
+  }
 }
 
 function runResolvers(resolvers, value) {
   setTimeout(function() {
-    resolvers.forEach(function(resolver) {
-      var { callback, trigger } = resolver;
-      if (typeof callback === 'function') {
-        trigger(callback(value));
-      } else {
-        trigger(value);
-      }
-    });
+    resolvers.forEach(runCallback.bind(null, 'resolve', value));
   }, 0);
 }
 
@@ -52,20 +71,32 @@ function then(state, resolveCallback, rejectCallback) {
       hasRejectFn = (typeof rejectCallback === 'function'),
       status = state.status,
       isResolved = (status === 'resolved'),
-      resolver = {};
+      isRejected = (status === 'rejected'),
+      data = {};
 
-  if (hasResolveFn) {
-    resolver.callback = resolveCallback;
-  }
+  data.resolveCallback = hasResolveFn ? resolveCallback : null;
+  data.rejectCallback = hasRejectFn ? rejectCallback : null;
+
   if (isResolved) {
-    runResolvers([resolver], state.value);
+    runResolvers([data], state.value);
+  } else if (isRejected) {
+    runRejectors([data], state.message);
   } else {
-    state.resolvers.push(resolver);
+    state.callbacks.push(data);
   }
 
-  // TODO: If already rejected, call new rejectCB and return
-
-  return new Promise(function(resolve) {
-    resolver.trigger = resolve;
+  return new Promise(function(resolve, reject) {
+    data.resolveTrigger = resolve;
+    data.rejectTrigger = reject;
   });
+}
+
+// Do try...catch is own function since it causes de-optimizations.
+// See: https://github.com/petkaantonov/bluebird/wiki/Optimization-killers
+function tryCatch(fn, arg) {
+  try {
+    return {value: fn(arg)};
+  } catch(error) {
+    return {error};
+  }
 }
