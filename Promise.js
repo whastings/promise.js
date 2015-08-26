@@ -12,6 +12,14 @@ export default function Promise(executor) {
   executor(resolveTrigger, rejectTrigger);
 }
 
+function callTrigger(resolveTrigger, rejectTrigger, arg) {
+  if (arg && typeof arg.then === 'function') {
+    arg.then(resolveTrigger, rejectTrigger);
+  } else {
+    resolveTrigger(arg);
+  }
+}
+
 function reject(state, message) {
   if (state.status !== 'pending') {
     return;
@@ -50,7 +58,7 @@ function runCallback(type, arg, data) {
   if (callback) {
     cbReturn = tryCatch(callback, arg);
     if (cbReturn.hasOwnProperty('value')) {
-      resolveTrigger(cbReturn.value);
+      callTrigger(resolveTrigger, rejectTrigger, cbReturn.value);
     } else {
       error = cbReturn.error;
       rejectTrigger(error instanceof Error ? error.message : error);

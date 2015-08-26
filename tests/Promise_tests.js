@@ -89,6 +89,36 @@ test('then() with success', function(t) {
     secondPromise.then(null, message => st.equal(message, 'foo'));
     resolveTrigger('bar');
   }));
+
+  t.test('it returns promise linked to promise returned by callback', before(function(st) {
+    var returnPromise, secondPromise, resolver;
+    st.plan(1);
+
+    returnPromise = new Promise(function(resolve) {
+      resolver = resolve;
+    });
+
+    secondPromise = promise.then(() => returnPromise);
+    secondPromise.then(value => st.equal(value, 'foo'));
+
+    resolveTrigger();
+    resolver('foo');
+  }));
+
+  t.test('it rejects promise if returned promise rejects', before(function(st) {
+    var returnPromise, secondPromise, rejector;
+    st.plan(1);
+
+    returnPromise = new Promise(function(resolve, reject) {
+      rejector = reject;
+    });
+
+    secondPromise = promise.then(() => returnPromise);
+    secondPromise.then(null, message => st.equal(message, 'foo'));
+
+    resolveTrigger();
+    rejector('foo');
+  }));
 });
 
 test('then() with rejection', function(t) {
@@ -153,5 +183,20 @@ test('then() with rejection', function(t) {
 
     secondPromise.then(null, message => st.equal(message, 'foo'));
     rejectTrigger('bar');
+  }));
+
+  t.test('it returns promise linked to promise returned by callback', before(function(st) {
+    var returnPromise, secondPromise, resolver;
+    st.plan(1);
+
+    returnPromise = new Promise(function(resolve) {
+      resolver = resolve;
+    });
+
+    secondPromise = promise.then(null, () => returnPromise);
+    secondPromise.then(value => st.equal(value, 'foo'));
+
+    rejectTrigger();
+    resolver('foo');
   }));
 });
