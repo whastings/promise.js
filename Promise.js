@@ -4,12 +4,12 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  var resolveTrigger = resolve.bind(this, state),
-      rejectTrigger = reject.bind(this, state);
+  state.resolveTrigger = resolve.bind(this, state);
+  state.rejectTrigger = reject.bind(this, state);
 
   this.then = then.bind(this, state);
 
-  executor(resolveTrigger, rejectTrigger);
+  executor(state.resolveTrigger, state.rejectTrigger);
 }
 
 function callTrigger(resolveTrigger, rejectTrigger, arg) {
@@ -35,6 +35,12 @@ function resolve(state, value) {
   if (state.status !== 'pending') {
     return;
   }
+
+  if (value && typeof value.then === 'function') {
+    value.then(state.resolveTrigger, state.rejectTrigger);
+    return;
+  }
+
   state.value = value;
   state.status = 'resolved';
 

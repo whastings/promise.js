@@ -119,6 +119,19 @@ test('then() with success', function(t) {
     resolveTrigger();
     rejector('foo');
   }));
+
+  t.test('it adopts state of promise if resolved w/ promise', before(function(st) {
+    var resolver, secondPromise;
+    st.plan(1);
+
+    secondPromise = new Promise(function(resolve, reject) {
+      resolver = resolve;
+    });
+
+    promise.then(value => st.equal(value, 'foo'));
+    resolveTrigger(secondPromise);
+    resolver('foo');
+  }));
 });
 
 test('then() with rejection', function(t) {
