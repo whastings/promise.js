@@ -12,8 +12,11 @@ export default function Promise(executor) {
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function callTrigger(resolveTrigger, rejectTrigger, arg) {
+function callTrigger(promise, resolveTrigger, rejectTrigger, arg) {
   if (arg && typeof arg.then === 'function') {
+    if (arg === promise) {
+      return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
+    }
     arg.then(resolveTrigger, rejectTrigger);
   } else {
     resolveTrigger(arg);
@@ -54,7 +57,7 @@ function runRejectors(rejectors, message) {
 }
 
 function runCallback(type, arg, data) {
-  var { rejectCallback, resolveCallback, rejectTrigger, resolveTrigger } = data,
+  var { promise, rejectCallback, resolveCallback, rejectTrigger, resolveTrigger } = data,
       isResolving = (type === 'resolve'),
       callback = isResolving ? resolveCallback : rejectCallback,
       trigger = isResolving ? resolveTrigger : rejectTrigger,
@@ -64,10 +67,9 @@ function runCallback(type, arg, data) {
   if (callback) {
     cbReturn = tryCatch(callback, arg);
     if (cbReturn.hasOwnProperty('value')) {
-      callTrigger(resolveTrigger, rejectTrigger, cbReturn.value);
+      callTrigger(promise, resolveTrigger, rejectTrigger, cbReturn.value);
     } else {
-      error = cbReturn.error;
-      rejectTrigger(error instanceof Error ? error.message : error);
+      rejectTrigger(cbReturn.error);
     }
   } else {
     trigger(arg);
@@ -86,7 +88,8 @@ function then(state, resolveCallback, rejectCallback) {
       status = state.status,
       isResolved = (status === 'resolved'),
       isRejected = (status === 'rejected'),
-      data = {};
+      data = {},
+      promise;
 
   data.resolveCallback = hasResolveFn ? resolveCallback : null;
   data.rejectCallback = hasRejectFn ? rejectCallback : null;
@@ -99,10 +102,12 @@ function then(state, resolveCallback, rejectCallback) {
     state.callbacks.push(data);
   }
 
-  return new Promise(function(resolve, reject) {
+  promise = data.promise = new Promise(function(resolve, reject) {
     data.resolveTrigger = resolve;
     data.rejectTrigger = reject;
   });
+
+  return promise;
 }
 
 // Do try...catch is own function since it causes de-optimizations.

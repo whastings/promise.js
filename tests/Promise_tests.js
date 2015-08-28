@@ -86,7 +86,7 @@ test('then() with success', function(t) {
     });
     st.plan(1);
 
-    secondPromise.then(null, message => st.equal(message, 'foo'));
+    secondPromise.then(null, error => st.equal(error.message, 'foo'));
     resolveTrigger('bar');
   }));
 
@@ -194,7 +194,7 @@ test('then() with rejection', function(t) {
     });
     st.plan(1);
 
-    secondPromise.then(null, message => st.equal(message, 'foo'));
+    secondPromise.then(null, error => st.equal(error.message, 'foo'));
     rejectTrigger('bar');
   }));
 
