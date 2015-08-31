@@ -13,11 +13,20 @@ export default function Promise(executor) {
 }
 
 function callTrigger(promise, resolveTrigger, rejectTrigger, arg) {
-  if (arg && typeof arg.then === 'function') {
+  var then;
+  if (arg && ('then' in arg)) {
+    then = tryCatch(() => arg.then);
+  }
+
+  if (then) {
     if (arg === promise) {
       return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
     }
-    arg.then(resolveTrigger, rejectTrigger);
+    if (typeof then.value === 'function') {
+      then.value.call(arg, resolveTrigger, rejectTrigger);
+    } else if (then.error) {
+      rejectTrigger(then.error);
+    }
   } else {
     resolveTrigger(arg);
   }
