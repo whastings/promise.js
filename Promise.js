@@ -5,22 +5,20 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  state.rejectTrigger = reject.bind(null, state);
-  setResolveTrigger(state);
+  setTriggers(state);
 
   this.then = then.bind(null, state);
 
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function callTrigger(state, callState, resolveTrigger, rejectTrigger, arg) {
+function callTrigger(state, triggerState, resolveTrigger, rejectTrigger, arg) {
   var then = {},
       thenResult;
 
-  if (callState.called) {
+  if (triggerState.called) {
     return;
   }
-  callState.called = true;
 
   if (arg === state.self) {
     return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
@@ -31,7 +29,7 @@ function callTrigger(state, callState, resolveTrigger, rejectTrigger, arg) {
   }
 
   if (typeof then.value === 'function') {
-    setResolveTrigger(state);
+    setTriggers(state);
     thenResult = tryCatch(then.value.bind(arg), state.resolveTrigger, state.rejectTrigger);
     if (thenResult.error) {
       rejectTrigger(thenResult.error);
@@ -41,6 +39,8 @@ function callTrigger(state, callState, resolveTrigger, rejectTrigger, arg) {
   } else {
     resolveTrigger(arg);
   }
+
+  triggerState.called = true;
 }
 
 function isObject(value) {
@@ -48,8 +48,8 @@ function isObject(value) {
   return value !== null && (type === 'object' || type === 'function');
 }
 
-function reject(state, message) {
-  if (state.status !== 'pending') {
+function reject(state, triggerState, message) {
+  if (triggerState.called || state.status !== 'pending') {
     return;
   }
 
@@ -57,6 +57,7 @@ function reject(state, message) {
 
   state.message = message;
   state.status = 'rejected';
+  triggerState.called = true;
 }
 
 function resolve(state, value) {
@@ -102,9 +103,11 @@ function runResolvers(resolvers, value) {
   }, 0);
 }
 
-function setResolveTrigger(state) {
+function setTriggers(state) {
+  var triggerState = {called: false};
+  state.rejectTrigger = reject.bind(null, state, triggerState);
   state.resolveTrigger = callTrigger.bind(
-    null, state, {called: false}, resolve.bind(null, state), state.rejectTrigger
+    null, state, triggerState, resolve.bind(null, state), state.rejectTrigger
   );
 }
 

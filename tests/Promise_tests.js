@@ -143,6 +143,17 @@ test('then() with success', function(t) {
     st.ok(thenable1.then.calledOnce);
     st.notOk(thenable2.then.called);
   }));
+
+  t.test('it ignores rejection if resolved with a thenable', before(function(st) {
+    var thenable = {then: sinon.spy()};
+    st.plan(1);
+
+    promise.then(null, () => st.fail());
+    resolveTrigger(thenable);
+    rejectTrigger();
+
+    st.ok(thenable.then.calledOnce);
+  }));
 });
 
 test('then() with rejection', function(t) {
