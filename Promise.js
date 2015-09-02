@@ -5,23 +5,22 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  state.rejectTrigger = reject.bind(this, state);
-  state.resolveTrigger = callTrigger.bind(
-    null, state, resolve.bind(this, state), state.rejectTrigger
-  );
+  state.rejectTrigger = reject.bind(null, state);
+  setResolveTrigger(state);
 
-  this.then = then.bind(this, state);
+  this.then = then.bind(null, state);
 
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function callTrigger(state, resolveTrigger, rejectTrigger, arg) {
+function callTrigger(state, callState, resolveTrigger, rejectTrigger, arg) {
   var then = {},
       thenResult;
 
-  if (state.status !== 'pending') {
+  if (callState.called) {
     return;
   }
+  callState.called = true;
 
   if (arg === state.self) {
     return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
@@ -32,6 +31,7 @@ function callTrigger(state, resolveTrigger, rejectTrigger, arg) {
   }
 
   if (typeof then.value === 'function') {
+    setResolveTrigger(state);
     thenResult = tryCatch(then.value.bind(arg), state.resolveTrigger, state.rejectTrigger);
     if (thenResult.error) {
       rejectTrigger(thenResult.error);
@@ -100,6 +100,12 @@ function runResolvers(resolvers, value) {
   setTimeout(function() {
     resolvers.forEach(runCallback.bind(null, 'resolve', value));
   }, 0);
+}
+
+function setResolveTrigger(state) {
+  state.resolveTrigger = callTrigger.bind(
+    null, state, {called: false}, resolve.bind(null, state), state.rejectTrigger
+  );
 }
 
 function then(state, resolveCallback, rejectCallback) {

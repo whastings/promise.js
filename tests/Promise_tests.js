@@ -120,7 +120,7 @@ test('then() with success', function(t) {
     rejector('foo');
   }));
 
-  t.test('it adopts state of promise if resolved w/ promise', before(function(st) {
+  t.test('it adopts state of promise if resolved w/ thenable', before(function(st) {
     var resolver, secondPromise;
     st.plan(1);
 
@@ -131,6 +131,17 @@ test('then() with success', function(t) {
     promise.then(value => st.equal(value, 'foo'));
     resolveTrigger(secondPromise);
     resolver('foo');
+  }));
+
+  t.test('it ignores resolution with more than one thenable', before(function(st) {
+    var thenable1 = {then: sinon.spy()},
+        thenable2 = {then: sinon.spy()};
+    st.plan(2);
+    resolveTrigger(thenable1);
+    resolveTrigger(thenable2);
+
+    st.ok(thenable1.then.calledOnce);
+    st.notOk(thenable2.then.called);
   }));
 });
 
