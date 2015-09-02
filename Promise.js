@@ -16,7 +16,8 @@ export default function Promise(executor) {
 }
 
 function callTrigger(state, resolveTrigger, rejectTrigger, arg) {
-  var then = {};
+  var then = {},
+      thenResult;
 
   if (state.status !== 'pending') {
     return;
@@ -31,7 +32,10 @@ function callTrigger(state, resolveTrigger, rejectTrigger, arg) {
   }
 
   if (typeof then.value === 'function') {
-    then.value.call(arg, state.resolveTrigger, state.rejectTrigger);
+    thenResult = tryCatch(then.value.bind(arg), state.resolveTrigger, state.rejectTrigger);
+    if (thenResult.error) {
+      rejectTrigger(thenResult.error);
+    }
   } else if (then.error) {
     rejectTrigger(then.error);
   } else {
@@ -125,9 +129,9 @@ function then(state, resolveCallback, rejectCallback) {
 
 // Do try...catch is own function since it causes de-optimizations.
 // See: https://github.com/petkaantonov/bluebird/wiki/Optimization-killers
-function tryCatch(fn, arg) {
+function tryCatch(fn, ...args) {
   try {
-    return {value: fn(arg)};
+    return {value: fn(...args)};
   } catch(error) {
     return {error};
   }
