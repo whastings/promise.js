@@ -1,35 +1,47 @@
 export default function Promise(executor) {
   var state = {
     callbacks: [],
+    self: this,
     status: 'pending'
   };
 
-  state.resolveTrigger = resolve.bind(this, state);
   state.rejectTrigger = reject.bind(this, state);
+  state.resolveTrigger = callTrigger.bind(
+    null, state, resolve.bind(this, state), state.rejectTrigger
+  );
 
   this.then = then.bind(this, state);
 
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function callTrigger(promise, resolveTrigger, rejectTrigger, arg) {
-  var then;
-  if (arg && ('then' in arg)) {
+function callTrigger(state, resolveTrigger, rejectTrigger, arg) {
+  var then = {};
+
+  if (state.status !== 'pending') {
+    return;
+  }
+
+  if (arg === state.self) {
+    return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
+  }
+
+  if (isObject(arg) && ('then' in arg)) {
     then = tryCatch(() => arg.then);
   }
 
-  if (then) {
-    if (arg === promise) {
-      return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
-    }
-    if (typeof then.value === 'function') {
-      then.value.call(arg, resolveTrigger, rejectTrigger);
-    } else if (then.error) {
-      rejectTrigger(then.error);
-    }
+  if (typeof then.value === 'function') {
+    then.value.call(arg, state.resolveTrigger, state.rejectTrigger);
+  } else if (then.error) {
+    rejectTrigger(then.error);
   } else {
     resolveTrigger(arg);
   }
+}
+
+function isObject(value) {
+  var type = typeof value;
+  return value !== null && (type === 'object' || type === 'function');
 }
 
 function reject(state, message) {
@@ -48,11 +60,6 @@ function resolve(state, value) {
     return;
   }
 
-  if (value && typeof value.then === 'function') {
-    value.then(state.resolveTrigger, state.rejectTrigger);
-    return;
-  }
-
   state.value = value;
   state.status = 'resolved';
 
@@ -66,7 +73,7 @@ function runRejectors(rejectors, message) {
 }
 
 function runCallback(type, arg, data) {
-  var { promise, rejectCallback, resolveCallback, rejectTrigger, resolveTrigger } = data,
+  var { rejectCallback, resolveCallback, rejectTrigger, resolveTrigger } = data,
       isResolving = (type === 'resolve'),
       callback = isResolving ? resolveCallback : rejectCallback,
       trigger = isResolving ? resolveTrigger : rejectTrigger,
@@ -76,7 +83,7 @@ function runCallback(type, arg, data) {
   if (callback) {
     cbReturn = tryCatch(callback, arg);
     if (cbReturn.hasOwnProperty('value')) {
-      callTrigger(promise, resolveTrigger, rejectTrigger, cbReturn.value);
+      resolveTrigger(cbReturn.value);
     } else {
       rejectTrigger(cbReturn.error);
     }
@@ -97,8 +104,7 @@ function then(state, resolveCallback, rejectCallback) {
       status = state.status,
       isResolved = (status === 'resolved'),
       isRejected = (status === 'rejected'),
-      data = {},
-      promise;
+      data = {};
 
   data.resolveCallback = hasResolveFn ? resolveCallback : null;
   data.rejectCallback = hasRejectFn ? rejectCallback : null;
@@ -111,12 +117,10 @@ function then(state, resolveCallback, rejectCallback) {
     state.callbacks.push(data);
   }
 
-  promise = data.promise = new Promise(function(resolve, reject) {
+  return new Promise(function(resolve, reject) {
     data.resolveTrigger = resolve;
     data.rejectTrigger = reject;
   });
-
-  return promise;
 }
 
 // Do try...catch is own function since it causes de-optimizations.
