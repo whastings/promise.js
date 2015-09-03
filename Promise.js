@@ -14,7 +14,8 @@ export default function Promise(executor) {
 
 function callTrigger(state, triggerState, resolveTrigger, rejectTrigger, arg) {
   var then = {},
-      thenResult;
+      thenResult,
+      newTriggerState;
 
   if (triggerState.called) {
     return;
@@ -29,9 +30,9 @@ function callTrigger(state, triggerState, resolveTrigger, rejectTrigger, arg) {
   }
 
   if (typeof then.value === 'function') {
-    setTriggers(state);
+    newTriggerState = setTriggers(state);
     thenResult = tryCatch(then.value.bind(arg), state.resolveTrigger, state.rejectTrigger);
-    if (thenResult.error) {
+    if (thenResult.error && !newTriggerState.called) {
       rejectTrigger(thenResult.error);
     }
   } else if (then.error) {
@@ -109,6 +110,8 @@ function setTriggers(state) {
   state.resolveTrigger = callTrigger.bind(
     null, state, triggerState, resolve.bind(null, state), state.rejectTrigger
   );
+
+  return triggerState;
 }
 
 function then(state, resolveCallback, rejectCallback) {
