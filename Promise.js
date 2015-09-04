@@ -14,14 +14,14 @@ export default function Promise(executor) {
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function reject(state, triggerState, message) {
+function reject(state, triggerState, reason) {
   if (triggerState.called) {
     return;
   }
 
-  runRejectors(state.callbacks, message);
+  runRejectors(state.callbacks, reason);
 
-  state.message = message;
+  state.reason = reason;
   state.status = 'rejected';
   triggerState.called = true;
 }
@@ -61,9 +61,9 @@ function resolve(state, triggerState, value) {
   triggerState.called = true;
 }
 
-function runRejectors(rejectors, message) {
+function runRejectors(rejectors, reason) {
   setTimeout(function() {
-    rejectors.forEach(runCallback.bind(null, 'reject', message));
+    rejectors.forEach(runCallback.bind(null, 'reject', reason));
   }, 0);
 }
 
@@ -115,7 +115,7 @@ function then(state, resolveCallback, rejectCallback) {
   if (isResolved) {
     runResolvers([data], state.value);
   } else if (isRejected) {
-    runRejectors([data], state.message);
+    runRejectors([data], state.reason);
   } else {
     state.callbacks.push(data);
   }
