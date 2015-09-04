@@ -1,3 +1,5 @@
+import { isFunction, isObject, tryCatch } from './lib/helpers';
+
 export default function Promise(executor) {
   var state = {
     callbacks: [],
@@ -12,45 +14,8 @@ export default function Promise(executor) {
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
-function callTrigger(state, triggerState, resolveTrigger, rejectTrigger, arg) {
-  var then = {},
-      thenResult,
-      newTriggerState;
-
-  if (triggerState.called) {
-    return;
-  }
-
-  if (arg === state.self) {
-    return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
-  }
-
-  if (isObject(arg) && ('then' in arg)) {
-    then = tryCatch(() => arg.then);
-  }
-
-  if (typeof then.value === 'function') {
-    newTriggerState = setTriggers(state);
-    thenResult = tryCatch(then.value.bind(arg), state.resolveTrigger, state.rejectTrigger);
-    if (thenResult.error && !newTriggerState.called) {
-      rejectTrigger(thenResult.error);
-    }
-  } else if (then.error) {
-    rejectTrigger(then.error);
-  } else {
-    resolveTrigger(arg);
-  }
-
-  triggerState.called = true;
-}
-
-function isObject(value) {
-  var type = typeof value;
-  return value !== null && (type === 'object' || type === 'function');
-}
-
 function reject(state, triggerState, message) {
-  if (triggerState.called || state.status !== 'pending') {
+  if (triggerState.called) {
     return;
   }
 
@@ -61,15 +26,39 @@ function reject(state, triggerState, message) {
   triggerState.called = true;
 }
 
-function resolve(state, value) {
-  if (state.status !== 'pending') {
+function resolve(state, triggerState, value) {
+  var then = {},
+      rejectTrigger = state.rejectTrigger,
+      thenResult,
+      newTriggerState;
+
+  if (triggerState.called) {
     return;
   }
 
-  state.value = value;
-  state.status = 'resolved';
+  if (value === state.self) {
+    return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
+  }
 
-  runResolvers(state.callbacks, value);
+  if (isObject(value) && ('then' in value)) {
+    then = tryCatch(() => value.then);
+  }
+
+  if (isFunction(then.value)) {
+    newTriggerState = setTriggers(state);
+    thenResult = tryCatch(then.value.bind(value), state.resolveTrigger, state.rejectTrigger);
+    if (thenResult.error && !newTriggerState.called) {
+      rejectTrigger(thenResult.error);
+    }
+  } else if (then.error) {
+    rejectTrigger(then.error);
+  } else {
+    state.value = value;
+    state.status = 'resolved';
+    runResolvers(state.callbacks, value);
+  }
+
+  triggerState.called = true;
 }
 
 function runRejectors(rejectors, message) {
@@ -107,16 +96,14 @@ function runResolvers(resolvers, value) {
 function setTriggers(state) {
   var triggerState = {called: false};
   state.rejectTrigger = reject.bind(null, state, triggerState);
-  state.resolveTrigger = callTrigger.bind(
-    null, state, triggerState, resolve.bind(null, state), state.rejectTrigger
-  );
+  state.resolveTrigger = resolve.bind(null, state, triggerState);
 
   return triggerState;
 }
 
 function then(state, resolveCallback, rejectCallback) {
-  var hasResolveFn = (typeof resolveCallback === 'function'),
-      hasRejectFn = (typeof rejectCallback === 'function'),
+  var hasResolveFn = (isFunction(resolveCallback)),
+      hasRejectFn = (isFunction(rejectCallback)),
       status = state.status,
       isResolved = (status === 'resolved'),
       isRejected = (status === 'rejected'),
@@ -137,14 +124,4 @@ function then(state, resolveCallback, rejectCallback) {
     data.resolveTrigger = resolve;
     data.rejectTrigger = reject;
   });
-}
-
-// Do try...catch is own function since it causes de-optimizations.
-// See: https://github.com/petkaantonov/bluebird/wiki/Optimization-killers
-function tryCatch(fn, ...args) {
-  try {
-    return {value: fn(...args)};
-  } catch(error) {
-    return {error};
-  }
 }
