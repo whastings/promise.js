@@ -16,21 +16,10 @@ exports.deferred = function() {
   };
 };
 
-exports.rejected = function(message) {
-  var rejector;
-  var promise = new Promise(function(resolve, reject) {
-    rejector = reject;
-  });
-  rejector(message);
-  return promise;
+exports.rejected = function(reason) {
+  return Promise.reject(reason);
 };
 
 exports.resolved = function(value) {
-  var resolver;
-  var promise = new Promise(function(resolve) {
-    resolver = resolve;
-  });
-  resolver(value);
-  return promise;
+  return Promise.resolve(value);
 };
-

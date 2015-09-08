@@ -1,4 +1,5 @@
 import { isFunction, isObject, tryCatch } from './lib/helpers';
+import addStaticMethods from './lib/staticMethods.js';
 
 export default function Promise(executor) {
   var state = {
@@ -13,6 +14,8 @@ export default function Promise(executor) {
 
   executor(state.resolveTrigger, state.rejectTrigger);
 }
+
+addStaticMethods(Promise);
 
 function reject(state, triggerState, reason) {
   if (triggerState.called) {

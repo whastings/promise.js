@@ -235,3 +235,21 @@ test('then() with rejection', function(t) {
     resolver('foo');
   }));
 });
+
+test('Promise.reject()', function(t) {
+  t.test('it returns a promise already rejected with reason', function(st) {
+    var promise = Promise.reject('foo');
+    st.plan(1);
+
+    promise.then(null, reason => st.equal(reason, 'foo'));
+  });
+});
+
+test('Promise.resolve()', function(t) {
+  t.test('it returns a promise already resolved with value', function(st) {
+    var promise = Promise.resolve('foo');
+    st.plan(1);
+
+    promise.then(value => st.equal(value, 'foo'));
+  });
+});
