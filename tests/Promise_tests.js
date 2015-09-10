@@ -236,6 +236,55 @@ test('then() with rejection', function(t) {
   }));
 });
 
+test('Promise.all()', function(t) {
+  var promiseArgs,
+      allPromise;
+
+  function before(test) {
+    return function(t) {
+      promiseArgs = [1, 2, 3].map(function() {
+        var rejector, resolver;
+        var promise = new Promise(function(resolve, reject) {
+          rejector = reject;
+          resolver = resolve;
+        });
+        return {promise, rejector, resolver};
+      });
+
+      test(t);
+    };
+  }
+
+  t.test('it resolves when all passed promises resolve', before(function(st) {
+    st.plan(1);
+
+    allPromise = Promise.all(promiseArgs.map(arg => arg.promise));
+    allPromise.then(values => st.deepEqual(values, [2, 1, 0]));
+
+    promiseArgs.reverse().forEach((arg, i) => arg.resolver(i));
+  }));
+
+  t.test('it converts any non-promise values to resolved promises', before(function(st) {
+    st.plan(1);
+
+    promiseArgs[1] = {promise: 'foo', resolver: function() {}};
+
+    allPromise = Promise.all(promiseArgs.map(arg => arg.promise));
+    allPromise.then(values => st.deepEqual(values, [0, 'foo', 2]));
+
+    promiseArgs.forEach((arg, i) => arg.resolver(i));
+  }));
+
+  t.test('it rejects if any passed promise rejects', before(function(st) {
+    st.plan(1);
+
+    allPromise = Promise.all(promiseArgs.map(arg => arg.promise));
+    allPromise.then(null, reason => st.equal(reason, 'foo'));
+
+    promiseArgs[0].rejector('foo');
+  }));
+});
+
 test('Promise.reject()', function(t) {
   t.test('it returns a promise already rejected with reason', function(st) {
     var promise = Promise.reject('foo');

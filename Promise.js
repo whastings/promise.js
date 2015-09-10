@@ -1,4 +1,4 @@
-import { isFunction, isObject, tryCatch } from './lib/helpers';
+import { hasThen, isFunction, tryCatch } from './lib/helpers';
 import addStaticMethods from './lib/staticMethods.js';
 
 export default function Promise(executor) {
@@ -43,7 +43,7 @@ function resolve(state, triggerState, value) {
     return rejectTrigger(new TypeError('Cannot resolve a promise with itself as the value'));
   }
 
-  if (isObject(value) && ('then' in value)) {
+  if (hasThen(value)) {
     then = tryCatch(() => value.then);
   }
 
