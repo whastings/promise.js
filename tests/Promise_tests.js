@@ -236,6 +236,26 @@ test('then() with rejection', function(t) {
   }));
 });
 
+test('catch()', function(t) {
+  t.test('it calls callback when promise rejects', before(function(st) {
+    st.plan(1);
+
+    promise.catch((reason) => st.equal(reason, 'foo'));
+
+    rejectTrigger('foo');
+  }));
+
+  t.test('it returns a promise', before(function(st) {
+    st.plan(1);
+
+    promise
+      .catch((reason) => `${reason}bar`)
+      .then((value) => st.equal(value, 'foobar'));
+
+    rejectTrigger('foo');
+  }));
+});
+
 test('Promise.all()', function(t) {
   var promiseArgs,
       allPromise;

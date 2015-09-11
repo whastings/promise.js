@@ -8,14 +8,19 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  setTriggers(state);
+  var thenFn = this.then = then.bind(null, state);
+  this.catch = catchFn.bind(null, thenFn);
 
-  this.then = then.bind(null, state);
+  setTriggers(state);
 
   executor(state.resolveTrigger, state.rejectTrigger);
 }
 
 addStaticMethods(Promise);
+
+function catchFn(thenFn, callback) {
+  return thenFn(null, callback);
+}
 
 function reject(state, triggerState, reason) {
   if (triggerState.called) {
