@@ -305,6 +305,48 @@ test('Promise.all()', function(t) {
   }));
 });
 
+test('Promise.race()', function(t) {
+  var allPromise,
+      promiseArgs;
+
+  function before(test) {
+    return function(t) {
+      promiseArgs = [1, 2, 3].map(function() {
+        var rejector, resolver;
+        var promise = new Promise(function(resolve, reject) {
+          rejector = reject;
+          resolver = resolve;
+        });
+        return {promise, rejector, resolver};
+      });
+
+      test(t);
+    };
+  }
+
+  t.test('it resolves when first passed promise resolves', before(function(st) {
+    var toResolve = promiseArgs[1];
+    st.plan(1);
+    allPromise = Promise.race(promiseArgs.map(arg => arg.promise));
+
+    allPromise.then((value) => st.equal(value, 'foo'));
+    toResolve.resolver('foo');
+
+    promiseArgs.forEach((arg, i) => arg.resolver(i));
+  }));
+
+  t.test('it rejects when first passed promise rejects', before(function(st) {
+    var toReject = promiseArgs[2];
+    st.plan(1);
+    allPromise = Promise.race(promiseArgs.map(arg => arg.promise));
+
+    allPromise.then(null, (reason) => st.equal(reason, 'foo'));
+    toReject.rejector('foo');
+
+    promiseArgs.forEach((arg, i) => arg.rejector(i));
+  }));
+});
+
 test('Promise.reject()', function(t) {
   t.test('it returns a promise already rejected with reason', function(st) {
     var promise = Promise.reject('foo');
