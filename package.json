@@ -7,7 +7,7 @@
     "build": "webpack",
     "prepublish": "npm test && npm run spec && npm run build",
     "spec": "promises-aplus-tests tests/spec_adapter.js",
-    "test": "babel-node tests/Promise_tests.js | tap-spec",
+    "test": "babel-node tests/index.js | tap-spec",
     "test_watch": "wr 'babel-node tests/Promise_tests.js | tap-spec' Promise.js tests"
   },
   "author": "Will Hastings",
