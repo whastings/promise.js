@@ -1,5 +1,6 @@
 import { hasThen, isFunction, tryCatch } from './lib/helpers';
 import addStaticMethods from './lib/staticMethods.js';
+import immediate from 'immediate';
 
 export default function Promise(executor) {
   var state = {
@@ -70,7 +71,7 @@ function resolve(state, triggerState, value) {
 }
 
 function runRejectors(rejectors, reason) {
-  setTimeout(function() {
+  immediate(function() {
     rejectors.forEach(runCallback.bind(null, 'reject', reason));
   }, 0);
 }
@@ -96,7 +97,7 @@ function runCallback(type, arg, data) {
 }
 
 function runResolvers(resolvers, value) {
-  setTimeout(function() {
+  immediate(function() {
     resolvers.forEach(runCallback.bind(null, 'resolve', value));
   }, 0);
 }

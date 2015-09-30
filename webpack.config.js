@@ -15,5 +15,10 @@ module.exports = {
       }
     ]
   },
-  devtool: 'hidden-source-map'
+  devtool: 'hidden-source-map',
+  node: {
+    Buffer: false,
+    process: false,
+    setImmediate: false
+  }
 };
