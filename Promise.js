@@ -1,4 +1,4 @@
-import { hasThen, isFunction, tryCatch } from './lib/helpers';
+import { hasThen, isFunction, partial, tryCatch } from './lib/helpers';
 import addStaticMethods from './lib/staticMethods.js';
 import immediate from 'immediate';
 
@@ -9,8 +9,8 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  var thenFn = this.then = then.bind(null, state);
-  this.catch = catchFn.bind(null, thenFn);
+  var thenFn = this.then = partial(then, state);
+  this.catch = partial(catchFn, thenFn);
 
   setTriggers(state);
 
@@ -55,7 +55,11 @@ function resolve(state, triggerState, value) {
 
   if (isFunction(then.value)) {
     newTriggerState = setTriggers(state);
-    thenResult = tryCatch(then.value.bind(value), state.resolveTrigger, state.rejectTrigger);
+    thenResult = tryCatch(
+      (...args) => then.value.apply(value, args),
+      state.resolveTrigger,
+      state.rejectTrigger
+    );
     if (thenResult.error && !newTriggerState.called) {
       rejectTrigger(thenResult.error);
     }
@@ -72,7 +76,7 @@ function resolve(state, triggerState, value) {
 
 function runRejectors(rejectors, reason) {
   immediate(function() {
-    rejectors.forEach(runCallback.bind(null, 'reject', reason));
+    rejectors.forEach(partial(runCallback, 'reject', reason));
   }, 0);
 }
 
@@ -98,14 +102,14 @@ function runCallback(type, arg, data) {
 
 function runResolvers(resolvers, value) {
   immediate(function() {
-    resolvers.forEach(runCallback.bind(null, 'resolve', value));
+    resolvers.forEach(partial(runCallback, 'resolve', value));
   }, 0);
 }
 
 function setTriggers(state) {
   var triggerState = {called: false};
-  state.rejectTrigger = reject.bind(null, state, triggerState);
-  state.resolveTrigger = resolve.bind(null, state, triggerState);
+  state.rejectTrigger = partial(reject, state, triggerState);
+  state.resolveTrigger = partial(resolve, state, triggerState);
 
   return triggerState;
 }
