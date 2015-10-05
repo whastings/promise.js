@@ -1,4 +1,4 @@
-import { hasThen, isFunction, partial, tryCatch } from './lib/helpers';
+import { defineFinalProp, hasThen, isFunction, partial, tryCatch } from './lib/helpers';
 import addStaticMethods from './lib/staticMethods.js';
 import immediate from 'immediate';
 
@@ -9,8 +9,8 @@ export default function Promise(executor) {
     status: 'pending'
   };
 
-  var thenFn = this.then = partial(then, state);
-  this.catch = partial(catchFn, thenFn);
+  defineFinalProp(this, 'then', partial(then, state));
+  defineFinalProp(this, 'catch', partial(catchFn, this.then));
 
   setTriggers(state);
 
