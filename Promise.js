@@ -1,4 +1,6 @@
-import { defineFinalProp, hasThen, isFunction, partial, tryCatch } from './lib/helpers';
+import {
+  defineFinalProp, forEach, hasThen, isFunction, partial, tryCatch
+} from './lib/helpers';
 import addStaticMethods from './lib/staticMethods.js';
 import immediate from 'immediate';
 
@@ -76,7 +78,7 @@ function resolve(state, triggerState, value) {
 
 function runRejectors(rejectors, reason) {
   immediate(function() {
-    rejectors.forEach(partial(runCallback, 'reject', reason));
+    forEach(rejectors, partial(runCallback, 'reject', reason));
   }, 0);
 }
 
@@ -102,7 +104,7 @@ function runCallback(type, arg, data) {
 
 function runResolvers(resolvers, value) {
   immediate(function() {
-    resolvers.forEach(partial(runCallback, 'resolve', value));
+    forEach(resolvers, partial(runCallback, 'resolve', value));
   }, 0);
 }
 
