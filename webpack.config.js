@@ -20,10 +20,5 @@ module.exports = {
     Buffer: false,
     process: false,
     setImmediate: false
-  },
-  resolve: {
-    alias: {
-      immediate: '../node_modules/immediate/dist/immediate.js'
-    }
   }
 };
