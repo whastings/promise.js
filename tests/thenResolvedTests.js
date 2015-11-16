@@ -1,5 +1,5 @@
 import { deferred } from './helpers';
-import Promise from '../Promise';
+import Promise from '../lib/Unbreakable';
 import sinon from 'sinon';
 import test from 'tape';
 import thenSharedTests from './thenSharedTests';

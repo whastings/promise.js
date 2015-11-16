@@ -1,15 +1,15 @@
 {
-  "name": "promise.js",
+  "name": "unbreakable",
   "version": "0.0.1",
-  "description": "Practice implementing a Promise library by hand.",
-  "main": "dist/Promise.js",
+  "description": "A JavaScript Promise implementation with fully encapsulated state.",
+  "main": "dist/Unbreakable.js",
   "scripts": {
     "build": "webpack",
     "build_tests": "npm run build && webpack --config webpack.tests-config.js",
     "prepublish": "npm test && npm run spec && npm run build",
     "spec": "promises-aplus-tests tests/spec_adapter.js",
     "test": "babel-node tests/index.js | tap-spec",
-    "test_watch": "wr 'babel-node tests/Promise_tests.js | tap-spec' Promise.js tests"
+    "test_watch": "wr 'babel-node tests/Promise_tests.js | tap-spec' lib tests"
   },
   "author": "Will Hastings",
   "license": "MIT",

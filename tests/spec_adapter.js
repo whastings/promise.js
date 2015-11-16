@@ -1,6 +1,6 @@
 require('babel/register');
 
-var Promise = require('../Promise'); // jshint ignore:line
+var Promise = require('../lib/Unbreakable'); // jshint ignore:line
 
 exports.deferred = function() {
   var resolver, rejector;

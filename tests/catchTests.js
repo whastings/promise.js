@@ -1,5 +1,5 @@
 import { deferred } from './helpers';
-import Promise from '../Promise';
+import Promise from '../lib/Unbreakable';
 import test from 'tape';
 
 export default function catchTests() {

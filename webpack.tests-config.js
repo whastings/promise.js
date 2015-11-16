@@ -4,7 +4,7 @@ var config = module.exports = {
   entry: './tests/index.js',
   externals: [
     {
-      '../Promise': 'var Promise'
+      '../lib/Unbreakable': 'var Promise'
     },
     'sinon'
   ],

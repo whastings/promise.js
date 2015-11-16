@@ -1,7 +1,7 @@
 module.exports = {
-  entry: './Promise.js',
+  entry: './lib/Unbreakable.js',
   output: {
-    filename: 'dist/Promise.js',
+    filename: 'dist/Unbreakable.js',
     library: 'Promise',
     libraryTarget: 'umd',
     sourcePrefix: '  '
@@ -23,7 +23,7 @@ module.exports = {
   },
   resolve: {
     alias: {
-      immediate: './node_modules/immediate/dist/immediate.js'
+      immediate: '../node_modules/immediate/dist/immediate.js'
     }
   }
 };

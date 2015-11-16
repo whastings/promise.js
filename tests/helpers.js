@@ -1,4 +1,4 @@
-import Promise from '../Promise';
+import Promise from '../lib/Unbreakable';
 
 export function deferred() {
   var rejectTrigger,

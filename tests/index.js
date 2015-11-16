@@ -1,6 +1,6 @@
 import catchTests from './catchTests';
 import constructorTests from './constructorTests';
-import Promise from '../Promise';
+import Promise from '../lib/Unbreakable';
 import thenRejectedTests from './thenRejectedTests';
 import thenResolvedTests from './thenResolvedTests';
 import staticMethodsTests from './staticMethodsTests';
