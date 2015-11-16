@@ -13,6 +13,9 @@
   },
   "author": "Will Hastings",
   "license": "MIT",
+  "engines": {
+    "node" : ">=0.10.0"
+  },
   "devDependencies": {
     "babel": "^5.8.21",
     "babel-core": "^5.8.24",
