@@ -10,7 +10,7 @@ export default function staticMethodsTests() {
     return function(t) {
       promiseArgs = [1, 2, 3].map(deferred);
 
-      test(t);
+      return test(t);
     };
   }
 

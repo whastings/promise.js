@@ -5,6 +5,7 @@
   "main": "dist/Promise.js",
   "scripts": {
     "build": "webpack",
+    "build_tests": "npm run build && webpack --config webpack.tests-config.js",
     "prepublish": "npm test && npm run spec && npm run build",
     "spec": "promises-aplus-tests tests/spec_adapter.js",
     "test": "babel-node tests/index.js | tap-spec",

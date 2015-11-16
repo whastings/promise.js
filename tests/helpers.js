@@ -1,4 +1,4 @@
-import Promise from '../Promise.js';
+import Promise from '../Promise';
 
 export function deferred() {
   var rejectTrigger,
