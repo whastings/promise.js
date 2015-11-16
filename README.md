@@ -1,4 +1,5 @@
 # Unbreakable.js
+![Travis CI Status][travis]
 
 Unbreakable is a [JavaScript Promise][js_promises] library that implements the
 [JavaScript 2015 (ES6) Promises API][es6_promises] and conforms to the
@@ -30,6 +31,7 @@ provided to its constructor argument as allowed by the promises spec.
 [js_promises]: https://www.promisejs.org/
 [es6_promises]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise
 [promises_aplus]: https://promisesaplus.com/
+[travis]: https://travis-ci.org/whastings/unbreakable.js.svg?branch=master
 
 ## Usage
 
